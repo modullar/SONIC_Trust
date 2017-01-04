@@ -17,12 +17,12 @@ class SocialRecord
 {
 	const JSONLD_CONTEXT		= 'http://sonic-project.net/';
 	const JSONLD_TYPE			= 'socialrecord';
-	
+
 	const TYPE_PLATFORM			= 'platform';
 	const TYPE_USER				= 'user';
-	
+
 	const SALT_CHARS			= 8;
-	
+
 	private $type				= NULL;
 	private $globalID			= NULL;	// global id
 	private $platformGID		= NULL;
@@ -34,7 +34,8 @@ class SocialRecord
 	private $datetime			= NULL;	// XSD datetime format e.g. 2015-01-01T11:11:11Z
 	private $active				= NULL;
 	private $keyRevocationList	= array();
-	
+	private $trustors = NULL;
+
 	public function __construct(SocialRecordBuilder $builder)
 	{
 		$this->setType($builder->getType());
@@ -48,21 +49,22 @@ class SocialRecord
 		$this->setDatetime($builder->getDatetime());
 		$this->setActive($builder->getActive());
 		$this->setKeyRevocationList($builder->getKeyRevocationList());
+		#$this->setTrustors($builder->getTrustors());
 	}
-	
+
 	/**
 	 * Serialization method for SocialRecord
-	 * 
+	 *
 	 * @return The serialized SocialRecord (String)
 	 */
 	public function __toString()
 	{
 		return $this->getJSONString();
 	}
-	
+
 	/**
 	 * Serialization method for SocialRecord
-	 * 
+	 *
 	 * @return The serialized SocialRecord (String)
 	 */
 	public function getJSONString()
@@ -81,21 +83,30 @@ class SocialRecord
 				. '"datetime":"' .	 		$this->datetime . '",'
 				. '"active":' . 			$this->active . ','
 				. '"keyRevocationList":[';
-				
+
 		foreach($this->keyRevocationList as $krc)
 		{
 			$json .= $krc->getJSONString();
 			if($krc !== end($this->keyRevocationList)) $json .= ',';
 		}
-		
+
+		$json .= '],';
+
+		$json .= '"trustors":[';
+
+		foreach($this->trustors as $tc)
+		{
+			$json .= $tc->getJSONString();
+			if($tc !== end($this->trustors)) $json .= ',';
+		}
+
 		$json .= ']}';
-		
 		return $json;
 	}
-	
+
 	/**
 	 * returns the SocialRecord as a PHP-style JSON object (via json_decode())
-	 * 
+	 *
 	 * @return the SocialRecord as a JSON object
 	 */
 	public function getJSONObject()
@@ -103,7 +114,7 @@ class SocialRecord
 		return new JSONObject($this->getJSONString());
 		//return json_decode($this->getJSONString());
 	}
-	
+
 	/**
 	 * Runs a validation of the structure of the SocialRecord
 	 *
@@ -114,121 +125,126 @@ class SocialRecord
 		// TODO check structure
 		if($this->type != SocialRecord::TYPE_PLATFORM && $this->type != SocialRecord::TYPE_USER)
 			throw new SocialRecordFormatException('invalid type value [' . $this->type . ']');
-		
+
 		if(!GID::isValid($this->globalID))
 			throw new SocialRecordFormatException('invalid globalID value');
-			
+
 		if(!GID::isValid($this->platformGID))
 			throw new SocialRecordFormatException('invalid platformGID value');
-		
+
 		if(!GID::verifyGID($this->personalPublicKey, $this->salt, $this->globalID))
 			throw new SocialRecordFormatException('invalid globalID value');
-		
+
 		if(!XSDDateTime::isValid($this->datetime))
 			throw new SocialRecordFormatException('invalid date value [' . $this->datetime . ']');
-		
+
 		/*if($this->)
 			throw new SocialRecordFormatException('invalid value');
 		*/
-		
+
 		return true;
 	}
-	
+
 	public function setType($type)
 	{
 		$this->type = $type;
-		
+
 		return $this;
 	}
-	
+
 	public function setGlobalID($gid)
 	{
 		$this->globalID = $gid;
-		
+
 		return $this;
 	}
-	
+
 	public function setPlatformGID($pgid)
 	{
 		$this->platformGID = $pgid;
-		
+
 		return $this;
 	}
-	
+
 	public function setDisplayName($displayName)
 	{
 		$this->displayName = $displayName;
-		
+
 		return $this;
 	}
-	
+
 	public function setProfileLocation($profileLocation)
 	{
 		$this->profileLocation = $profileLocation;
-		
+
 		return $this;
 	}
-	
+
 	public function setPersonalPublicKey($personalPublicKey)
 	{
 		$this->personalPublicKey = $personalPublicKey;
-		
+
 		return $this;
 	}
-	
+
 	public function setAccountPublicKey($accountPublicKey)
 	{
 		$this->accountPublicKey = $accountPublicKey;
-		
+
 		return $this;
 	}
-	
+
 	public function setSalt($salt)
 	{
 		$this->salt = $salt;
-		
+
 		return $this;
 	}
-	
+
 	public function setActive($active)
 	{
 		$this->active = $active;
-		
+
 		return $this;
 	}
-	
+
 	public function setKeyRevocationList($krl)
 	{
 		$this->keyRevocationList = $krl;
 	}
-	
+
+	public function setTrustors($trustorsList)
+	{
+		$this->trustors = $trustorsList;
+	}
+
 	public function setDateTime($date)
 	{
 		$this->datetime = $date;
-		
+
 		return $this;
 	}
-	
+
 	public function getType()
 	{
 		return $this->type;
 	}
-	
+
 	public function getGlobalID()
 	{
 		return $this->globalID;
 	}
-	
+
 	public function getPlatformGID()
 	{
 		return $this->platformGID;
 	}
-	
+
 	public function getDisplayName()
 	{
 		return $this->displayName;
 	}
-	
+
 	public function getProfileLocation()
 	{
 		if($this->profileLocation[strlen($this->profileLocation)-1] == '/')
@@ -236,36 +252,42 @@ class SocialRecord
 		else
 			return $this->profileLocation . '/';
 	}
-	
+
 	public function getPersonalPublicKey()
 	{
 		return $this->personalPublicKey;
 	}
-	
+
 	public function getAccountPublicKey()
 	{
 		return $this->accountPublicKey;
 	}
-	
+
 	public function getSalt()
 	{
 		return $this->salt;
 	}
-	
+
 	public function getDateTime()
 	{
 		return $this->datetime;
 	}
-	
+
 	public function getActive()
 	{
 		return $this->active;
 	}
-	
+
 	public function getKeyRevocationList()
 	{
 		return $this->keyRevocationList;
 	}
+
+	public function getTrustors()
+	{
+		return $this->trustors;
+	}
+
 }
 
 ?>
