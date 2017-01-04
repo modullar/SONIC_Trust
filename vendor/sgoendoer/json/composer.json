@@ -1,0 +1,13 @@
+{
+	"name": "sgoendoer/json",
+	"description": "Simple JSON for PHP",
+	"version": "0.2.1",
+	"license": "MIT",
+	"autoload":
+	{
+		"psr-4":
+		{
+			"sgoendoer\\json\\": "src/"
+		}
+	}
+}

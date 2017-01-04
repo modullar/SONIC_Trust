@@ -1,0 +1,6 @@
+{
+  "require": {
+    "sgoendoer/esquery": "dev-master",
+    "sgoendoer/sonic": "0.3.0"
+  }
+}
