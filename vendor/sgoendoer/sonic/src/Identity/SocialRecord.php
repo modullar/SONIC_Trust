@@ -49,7 +49,7 @@ class SocialRecord
 		$this->setDatetime($builder->getDatetime());
 		$this->setActive($builder->getActive());
 		$this->setKeyRevocationList($builder->getKeyRevocationList());
-		#$this->setTrustors($builder->getTrustors());
+		$this->setTrustors($builder->getTrustors());
 	}
 
 	/**
@@ -84,6 +84,8 @@ class SocialRecord
 				. '"active":' . 			$this->active . ','
 				. '"keyRevocationList":[';
 
+
+
 		foreach($this->keyRevocationList as $krc)
 		{
 			$json .= $krc->getJSONString();
@@ -93,6 +95,7 @@ class SocialRecord
 		$json .= '],';
 
 		$json .= '"trustors":[';
+
 
 		foreach($this->trustors as $tc)
 		{
