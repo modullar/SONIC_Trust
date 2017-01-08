@@ -6,6 +6,7 @@ use sgoendoer\Sonic\Identity\Trustor;
 class TrustorBuilder{
   private $globalID   = NULL;
   private $trustValue = NULL;
+  private $socialRecordURL = NULL;
 
   private static $MAX_TRUST_VALUE = 10;
   private static $MIN_TRUST_VALUE = 0;
@@ -25,6 +26,7 @@ class TrustorBuilder{
     return (new TrustorBuilder())
 				->globalID($json->globalID)
 				->trustValue($json->trustValue)
+        ->socialRecordURL($json->socialRecordURL)
 				->build();
   }
 
@@ -51,6 +53,20 @@ class TrustorBuilder{
 
 		return $this;
 	}
+
+
+  public function getsocialRecordURL()
+	{
+		return $this->socialRecordURL;
+	}
+
+	public function socialRecordURL($socialRecordURL)
+	{
+		$this->socialRecordURL = $socialRecordURL;
+
+		return $this;
+	}
+
 
 	public function build(){
     if($this->globalID == NULL)

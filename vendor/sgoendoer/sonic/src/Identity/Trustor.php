@@ -14,14 +14,17 @@ class Trustor
   const JSONLD_CONTEXT		= 'http://sonic-project.net/';
 	const JSONLD_TYPE			= 'trustor';
 
-  private $globalID   = NULL;
-  private $trustValue = NULL;
+  private $globalID             = NULL;
+  private $socialRecordURL     = NULL;
+  private $trustValue           = NULL;
+
 
 
   public function __construct(TrustorBuilder $builder)
 	{
-		$this->globalID			= $builder->getGlobalID();
-		$this->trustValue		= $builder->getTrustValue();
+		$this->globalID			      = $builder->getGlobalID();
+		$this->trustValue		      = $builder->getTrustValue();
+    $this->socialRecordURL		= $builder->getsocialRecordURL();
 	}
 
   public function __toString()
@@ -61,6 +64,11 @@ class Trustor
   public function getTrustValue()
 	{
 		return $this->trustValue;
+	}
+
+  public function getsocialRecordURL()
+	{
+		return $this->socialRecordURL;
 	}
 
 	/**
