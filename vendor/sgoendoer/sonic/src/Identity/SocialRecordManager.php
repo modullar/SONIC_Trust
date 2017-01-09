@@ -14,6 +14,8 @@ use sgoendoer\Sonic\Identity\SocialRecordManager;
 use sgoendoer\Sonic\Identity\KeyRevocationCertificateBuilder;
 use sgoendoer\Sonic\Identity\SocialRecordNotFoundException;
 
+
+
 use sgoendoer\json\JSONObject;
 
 /**
@@ -28,7 +30,7 @@ class SocialRecordManager
 	/**
 	 * Sends a SocialRecord to the GSLS. The SocialRecord is updated/overwritten if it already exists. Otherwise, the
 	 * new SocialRecord is stored. In case of a failed ateempt to (over-)write a SocialRecord, an Exception is thrown.
-	 * 
+	 *
 	 * @param $entityAuthData EntityAuthData The EntityAuthData object for the SocialRecord to be pushed. The personal
 	 * key pair must be configured
 	 */
@@ -36,17 +38,66 @@ class SocialRecordManager
 	{
 		if($entityAuthData->getPersonalKeyPair() == NULL)
 			throw new \Exception('SocialRecord can only be pushed with PersonalKeyPair configured');
-		
+
 		if(SocialRecordManager::socialRecordExists($entityAuthData->getGlobalID()))
 			GSLS::putSocialRecord($entityAuthData->getSocialRecord(), $entityAuthData->getPersonalKeyPair()->getPrivateKey());
 		else
 			GSLS::postSocialRecord($entityAuthData->getSocialRecord(), $entityAuthData->getPersonalKeyPair()->getPrivateKey());
 	}
-	
+
+	/**
+		* Find a trust path and return a trust value
+	**/
+	public static function trustPath($sourceSocialRecord, $targetSocialRecord)
+	{
+		//BFS Tidal Trust Algorithm
+		#print($targetSocialRecord->getGlobalID());
+		$trustorsList = $targetSocialRecord->getTrustors();
+		$visitedList = array($targetSocialRecord->getGlobalID());
+		$newTrustorList = array();
+		$valuesList = array();
+		$found = False;
+		$trustVal = 1;
+		$trustPath = NULL;
+		while($found != Truse){
+			foreach ($trustorsList as $trustor) {
+				array_push($visitedList, $trustor->getGlobalID());
+				$trustVal = (int)($trustor->getTrustValue());
+				if($trustor->getGlobalID() == $sourceSocialRecord->getGlobalID()){
+					$trustVal *= (int)($trustor->getTrustValue());
+					$trustVal = $trustVal / (int)($trustor->getTrustValue());
+					$found = True;
+					break;
+				}
+				$newTrustor = SocialRecordManager::importSocialRecord(file_get_contents(__DIR__ ."/../../examples". $trustor->getSocialRecordURL()));
+				$newTrustorSR = $newTrustor['socialRecord'];
+				array_push($newTrustorList, $newTrustorSR->getTrustors());
+
+			}
+			foreach ($trustorsList as $trustor) {
+			}
+			foreach($newTrustorList as $list){
+				foreach($list as $newTrustor){
+					if (!in_array($newTrustor->getGlobalID(), $visitedList)){
+						if (!in_array($newTrustor, $trustorsList)){
+							array_push($trustorsList, $newTrustor);
+						}
+					}
+				}
+			}
+			$newTrustorList = array();
+		}
+		return($trustVal);
+	}
+
+	private static function searchPath($sourceSocialRecord, $targetSocialRecord){
+
+	}
+
 	/**
 	 * Retrieves a SocialRecord for a given GID from the GSLS or local cache
 	 * throws Exception
-	 * 
+	 *
 	 * @param $globalID String The globalID to resolve
 	 * @param $skipCache Boolean Determin whether caching should be skipped or not
 	 *
@@ -57,17 +108,17 @@ class SocialRecordManager
 		if(Sonic::socialRecordCachingEnabled() === true && $skipCache === false)
 		{
 			$sr = Sonic::getSocialRecordCaching()->getSocialRecordFromCache($globalID);
-			
+
 			if($sr !== false)
 			{
 				$sr->verify();
 				return $sr;
 			}
 		}
-		
+
 		return GSLS::getSocialRecord($globalID);
 	}
-	
+
 	/**
 	 * Checks if a SocialRecord is available in the GSLS for a given GID
 	 * throws Exception
@@ -80,7 +131,7 @@ class SocialRecordManager
 		{
 			throw new \Exception('Illegal GID format');
 		}
-		
+
 		try
 		{
 			$result = GSLS::getSocialRecord($globalID);
@@ -89,13 +140,13 @@ class SocialRecordManager
 		{
 			return false;
 		}
-		
+
 		return true;
 	}
-	
+
 	/**
 	 * Exports a SocialRecord object to a serialized JSONObject
-	 * 
+	 *
 	 * @param SocialRecord The SocialRecord to export
 	 * @param KeyPair account key pair to export
 	 * @param KeyPair personal key pair to export
@@ -104,38 +155,46 @@ class SocialRecordManager
 	public static function exportSocialRecord(SocialRecord $socialRecord, KeyPair $accountKeyPair = NULL, KeyPair $personalKeyPair = NULL)
 	{
 		$json = new JSONObject();
-		
+
 		$json->put('socialRecord', $socialRecord->getJSONObject());
-		
+
 		if($accountKeyPair != NULL)
 			$json->put('accountPrivateKey', PrivateKey::exportKey($accountKeyPair->getPrivateKey()));
-		
+
 		if($personalKeyPair != NULL)
 			$json->put('personalPrivateKey', PrivateKey::exportKey($personalKeyPair->getPrivateKey()));
-		
+
 		return $json->write();
 	}
-	
+
 	/**
 	 * Imports a SocialRecord from a string resource
-	 * 
+	 *
 	 * @param $source The string to parse
 	 * @return array Array containting the SocialRecord object and optinally the KeyPair(s)
 	 */
 	public static function importSocialRecord($source)
 	{
 		$json = new JSONObject($source);
-		
+
+
+
 		$socialRecord = SocialRecordBuilder::buildFromJSON($json->get('socialRecord'));
-		
+
+
+
 		$result = array('socialRecord' => $socialRecord);
-		
+
+
+
 		if($json->has('accountPrivateKey'))
 			$result['accountKeyPair'] = new KeyPair($json->get('accountPrivateKey'), $socialRecord->getAccountPublicKey());
 		if($json->has('personalPrivateKey'))
 			$result['personalKeyPair'] = new KeyPair($json->get('personalPrivateKey'), $socialRecord->getPersonalPublicKey());
-		
+
 		return $result;
+
+
 	}
 }
 

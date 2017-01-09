@@ -66,7 +66,7 @@ class Trustor
 		return $this->trustValue;
 	}
 
-  public function getsocialRecordURL()
+  public function getSocialRecordURL()
 	{
 		return $this->socialRecordURL;
 	}
